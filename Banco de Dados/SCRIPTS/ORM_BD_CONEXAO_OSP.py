@@ -8,6 +8,19 @@ import numpy as np
 import time
 from datetime import datetime
 from pandas.api.types import is_datetime64_any_dtype
+import configparser
+
+#Configurações do banco de dados
+ini_path = os.path.join(os.path.dirname(__file__), 'config.ini')
+config = configparser.ConfigParser()
+config.read(ini_path)
+
+db_host = config['database']['host']
+db_user = config['database']['user']
+db_password = config['database']['password']
+db_name = config['database']['dbname']
+
+
 
 caminhopasta = r"C:\Users\CENEGED\Desktop\yes\06"
 dfs = []
@@ -204,10 +217,10 @@ print(df.dtypes)
 try:
     
     with psycopg2.connect(
-        dbname="LEITURA",
-        user="postgres",
-        password="LD9h(8#38xN4Xc[a",
-        host="93.127.211.222",
+        dbname=db_user,
+        user=db_name,
+        password=db_password,
+        host=db_host,
         port="5432"
     ) as conn:
         conn.set_client_encoding('UTF8')
