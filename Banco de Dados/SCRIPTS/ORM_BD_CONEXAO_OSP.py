@@ -11,7 +11,7 @@ from pandas.api.types import is_datetime64_any_dtype
 import configparser
 
 #Configurações do banco de dados
-ini_path = os.path.join(os.path.dirname(__file__), 'config.ini')
+ini_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config.ini')
 config = configparser.ConfigParser()
 config.read(ini_path)
 
@@ -217,8 +217,8 @@ print(df.dtypes)
 try:
     
     with psycopg2.connect(
-        dbname=db_user,
-        user=db_name,
+        dbname=db_name,
+        user=db_user,
         password=db_password,
         host=db_host,
         port="5432"
