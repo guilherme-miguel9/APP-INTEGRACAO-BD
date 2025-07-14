@@ -209,3 +209,5 @@ __marimo__/
 .env
 *.ini
 .init
+
+LEITURA_SQL.sql
