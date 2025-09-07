@@ -22,7 +22,7 @@ db_name = config['database']['dbname']
 
 
 
-caminhopasta = r"C:\Users\CENEGED\Desktop\yes\06"
+caminhopasta = r""
 dfs = []
 
 
@@ -92,7 +92,7 @@ df = df.fillna('')
 df = df.replace(to_replace=['NaT', 'nan', 'NaN'], value=None)
 df = df.where(pd.notnull(df), None)
 #########################################################
-print(df)
+
 
 
 colunas_para_remover = ['TROCAS','CONCAT', 'ATIVOS']
@@ -235,7 +235,7 @@ try:
         data_to_insert = [tuple(row) for row in df.itertuples(index=False, name=None)]
     
     #modificar a tabela que vai ser inserida no BANCO DE DADOS
-        query = f"INSERT INTO osp_leitura_2025.osp_jul_25 ({', '.join(df.columns)}) VALUES ({', '.join(['%s']*len(df.columns))})"
+        query = f"INSERT INTO [table] ({', '.join(df.columns)}) VALUES ({', '.join(['%s']*len(df.columns))})"
 
         print(f"Quantidade de registros: {len(data_to_insert)}")
         
