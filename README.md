@@ -29,4 +29,4 @@ Principais bibliotecas do Python:
 
     
 
-Este Software foi desenvolvido para atualizar o banco de dados, através da leitura de um Excel.
+Software Desenvolvido para otimizar a forma em que se atualiza o banco de dados PostgreSQL, criando uma interface mais amigável ao usuário. 
