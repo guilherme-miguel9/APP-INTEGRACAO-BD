@@ -10,6 +10,6 @@ Principais bibliotecas do Python:
     - Tkinter
     - Pandas
     - PSYCOPG2
-    - THREADING
+    - THREADING (Falta implementar corretamente para funcionar a barra de Status)
 
 Este Software foi desenvolvido para atualizar o banco de dados, através da leitura de um Excel.
