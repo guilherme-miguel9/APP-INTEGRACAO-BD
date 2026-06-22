@@ -14,22 +14,30 @@ import sys
 import re
 from openpyxl import load_workbook
 import time
+from io import StringIO
+import io
+from pathlib import Path
+
 
 #Configurações e váriaveis globais
 
 #Configurações do banco de dados
-ini_path = os.path.join(os.path.dirname(__file__), 'config.ini')
+
+def resource_path(filename: str) -> Path:
+    if getattr(sys, 'frozen', False):
+        return Path(sys._MEIPASS) / filename
+    else:
+        return Path(__file__).resolve().parents[2] / filename
+    
+ini_path = resource_path('config.ini')
+
 config = configparser.ConfigParser()
-config.read(ini_path)
+config.read(ini_path, encoding='utf-8')
 
 db_host = config['database']['host']
-db_user = config['database']['user']
-db_password = config['database']['password']
 db_name = config['database']['dbname']
-
-db_password_escaped = quote_plus(db_password)
-engine = create_engine(f'postgresql://{db_user}:{db_password_escaped}@{db_host}:5432/{db_name}')
-insp = inspect(engine)
+# OBS: 'user' e 'password' não são mais lidos do config.ini.
+# Eles agora vêm da tela de login (variáveis login_usuario / login_senha).
 
 #Configurações do tKinter
 root = ttk.Window(themename="pulse")
@@ -41,7 +49,83 @@ parar_barra_progresso = threading.Event()
 tempo_medio_por_linha = 0.05
 ponteiro_01 = False
 
-#Funções abaixo 
+# Variáveis globais que vão guardar o que a pessoa digitar na tela de login
+login_usuario = None
+login_senha = None
+
+# Engine/inspector do SQLAlchemy só são criados depois do login dar certo
+engine = None
+insp = None
+
+#########################################################
+# TELA DE LOGIN
+#########################################################
+
+def realizar_login():
+    global login_usuario, login_senha, engine, insp
+
+    usuario_digitado = entry_usuario.get().strip()
+    senha_digitada = entry_senha.get()
+
+    if not usuario_digitado or not senha_digitada:
+        mensagem_login.config(text="Por favor, preencha usuário e senha.", foreground="red")
+        return
+
+    botao_login['state'] = 'disabled'
+    mensagem_login.config(text="Conectando ao banco de dados...", foreground="blue")
+    root.update_idletasks()
+
+    try:
+        senha_escapada = quote_plus(senha_digitada)
+        engine_teste = create_engine(
+            f'postgresql://{usuario_digitado}:{senha_escapada}@{db_host}:5432/{db_name}'
+        )
+        insp_teste = inspect(engine_teste)
+        insp_teste.get_schema_names()  # força uma tentativa real de conexão
+
+    except Exception as e:
+        mensagem_login.config(text=f"Falha no login: {e}", foreground="red")
+        botao_login['state'] = 'normal'
+        return
+
+    # Login validado com sucesso: guarda usuário/senha digitados nas variáveis globais
+    login_usuario = usuario_digitado
+    login_senha = senha_digitada
+    engine = engine_teste
+    insp = insp_teste
+
+    frame_login.destroy()
+    criar_tela_principal()
+
+
+frame_login = ttk.Labelframe(root, text="Login no Banco de Dados", bootstyle="info")
+frame_login.place(relx=0.5, rely=0.5, anchor="center")
+
+label_usuario = ttk.Label(frame_login, text="Usuário:")
+label_usuario.pack(padx=30, pady=(20, 5))
+
+entry_usuario = ttk.Entry(frame_login, width=30)
+entry_usuario.pack(padx=30, pady=5)
+entry_usuario.focus()
+
+label_senha = ttk.Label(frame_login, text="Senha:")
+label_senha.pack(padx=30, pady=5)
+
+entry_senha = ttk.Entry(frame_login, width=30, show="*")
+entry_senha.pack(padx=30, pady=5)
+
+mensagem_login = ttk.Label(frame_login, text="", wraplength=300, justify="left")
+mensagem_login.pack(padx=30, pady=10)
+
+botao_login = ttk.Button(frame_login, text="Entrar", command=realizar_login, bootstyle="primary")
+botao_login.pack(padx=30, pady=(5, 20))
+
+entry_usuario.bind("<Return>", lambda e: realizar_login())
+entry_senha.bind("<Return>", lambda e: realizar_login())
+
+#########################################################
+# Funções da tela principal (Excel / banco de dados)
+#########################################################
 
 def selecionar_arquivo_excel():
     global caminho_arquivo
@@ -71,7 +155,7 @@ def threading_processar_excel():
     parar_barra_progresso.clear()
     #contar_linhas = contar_linhas_excel()
     threading.Thread(target=processar_excel, daemon=True).start()
-    threading.Thread(target=atualizar_porcentagem_progresso(), daemon=True).start()
+    threading.Thread(target=atualizar_porcentagem_progresso, daemon=True).start()
     
     
 
@@ -216,6 +300,7 @@ def processar_excel():
         #Concatenar os dados de todas as abas em um unico df
         df = pd.concat([pd.read_excel(caminho_arquivo, sheet_name=aba, engine='openpyxl', dtype=colunasarrumadas) for aba in abas.sheet_names], ignore_index=True)
 
+        global ponteiro_01
         ponteiro_01 = True
         
         df = df.fillna('')
@@ -228,21 +313,39 @@ def processar_excel():
 
         df['Data_Atual'] = pd.to_datetime(df['Data_Atual'], format='%d.%m.%Y', errors='coerce')
 
-        df['Latitude'] = df['Latitude'].astype(float)
+        df['Latitude'] = pd.to_numeric(
+            df['Latitude'].astype(str).str.replace(',', '.', regex=False),
+            errors='coerce'
+        )
 
-        df['Longitude'] = df['Longitude'].astype(float)
+        df['Longitude'] = pd.to_numeric(
+            df['Longitude'].astype(str).str.replace(',', '.', regex=False),
+            errors='coerce'
+        )
 
-        df['Valor_fatura'] = df['Valor_fatura'].astype(float)
+        df['Valor_fatura'] = pd.to_numeric(
+            df['Valor_fatura'].astype(str).str.replace(',', '.', regex=False),
+            errors='coerce'
+        )
+        
 
         dias = df['Data_Atual'].dt.day.dropna().unique().tolist()
+        
+        #df['Hora_Leitura'] = pd.to_datetime(df['Hora_Leitura'], errors='coerce').dt.strftime('%H:%M:%S')
+        #df['Intervalo_leitura'] = pd.to_datetime(df['Intervalo_leitura'], errors='coerce').dt.strftime('%H:%M:%S')
+        df['Data_Atual'] = pd.to_datetime(df['Data_Atual'], errors='coerce').dt.strftime('%Y-%m-%d')
+
+        
 
         if tabela_box.get() in dicionario_meses:
             mes_tabela_box = dicionario_meses[tabela_box.get()]
 
-        mes_excel = df['Data_Atual'].iloc[0].month
+        mes_excel = pd.to_datetime(df['Data_Atual'].iloc[0]).month
 
         if mes_excel != mes_tabela_box:
             sys.exit(f"O mês da tabela selecionada {tabela_box.get()} não corresponde ao mês do Excel selecionado {nome_arquivo}. Por favor, selecione a tabela correta.")
+        
+        
         
         mensagem.config(text=f"Arquivo do Excel processo com sucesso!", foreground="green")
         
@@ -265,12 +368,13 @@ def processar_excel():
         
         mensagem.config(text="Conectando ao banco de dados...", foreground="blue")
 
+        # 'user' e 'password' agora vêm das variáveis preenchidas na tela de login
         with psycopg2.connect(
             dbname=db_name,
-            user=db_user,
-            password=db_password,
+            user=login_usuario,
+            password=login_senha,
             host=db_host,
-            port="5432"
+            port=5432
         ) as conn:
             conn.set_client_encoding('UTF8')
 
@@ -279,27 +383,39 @@ def processar_excel():
                 #Setar o estilo da data
                 cursor.execute("SET datestyle TO 'ISO, DMY';")
                 
+                #DELETAR OS DIAS QUE JÁ FORAM LIDOS
                 query_dias = sql.SQL("DELETE FROM {schema_leitura}.{tabela_leitura} WHERE EXTRACT(DAY FROM data_atual) IN ({placeholders})").format(
                     tabela_leitura=sql.Identifier(tabela_leitura),
                     schema_leitura=sql.Identifier(schema_leitura),
                     placeholders=sql.SQL(',').join(sql.Placeholder() * len(dias))
                     )
                 
-                cursor.execute(query_dias, (dias))
-
-                #Inserir o dataframe em uma lista de tuplas
-                data_to_insert = [tuple(row) for row in df.itertuples(index=False, name=None)]
+                cursor.execute(query_dias, dias)
                 conn.commit()
-                #modificar a tabela que vai ser inserida no BANCO DE DADOS e inserir os dados
-                query = f"INSERT INTO {schema_leitura}.{tabela_leitura} ({', '.join(df.columns)}) VALUES ({', '.join(['%s']*len(df.columns))})"
+                
+                # MODIFICADO PARA COPY
+                
 
-
-                mensagem_quantidade.config(text=f"Quantidade de registros: {len(data_to_insert)}", foreground="purple")
+                buffer = StringIO()
+                df.to_csv(buffer, index=False, header=False, encoding='utf-8')
+                buffer.seek(0)
+                
+                mensagem_quantidade.config(
+                text=f"Quantidade de registros: {len(df)}",
+                foreground="purple"
+                )
+                
+                query_copy = f"""
+                COPY {schema_leitura}.{tabela_leitura}
+                ({', '.join(df.columns)})
+                FROM STDIN WITH (FORMAT CSV, NULL '', ENCODING 'UTF8')
+                """
+            
             
 
-                extras.execute_batch(cursor, query, data_to_insert, page_size=50000)
-
+                cursor.copy_expert(query_copy, buffer)
                 conn.commit()
+                
                 mensagem.config(text="Banco de dados atualizado com sucesso!", foreground="green")
         
     except Exception as e:
@@ -318,54 +434,61 @@ def processar_excel():
             parar_barra_progresso.set()
             botao_abrir_excel['state'] = 'normal'
             botao_escolher_excel['state'] = 'normal'
+
+#########################################################
+# Criação da interface gráfica principal (só roda após login)
 #########################################################
 
-# Criação da interface gráfica
+def criar_tela_principal():
+    global bloco_bd, botao_escolher_excel, lista_box, mensagem_schema
+    global schema_box, tabela_box, bloco_mensagem, mensagem
+    global mensagem_quantidade, botao_abrir_excel, label_porcentagem, progress
 
-#BLOCO DO BANCO DE DADOS
-bloco_bd = ttk.LabelFrame(root, text="Configurações do Banco de Dados", bootstyle="info")
-bloco_bd.pack(side="top", anchor="n", padx=20, pady=20, expand=True)
+    #BLOCO DO BANCO DE DADOS
+    bloco_bd = ttk.Labelframe(root, text="Configurações do Banco de Dados", bootstyle="info")
+    bloco_bd.pack(side="top", anchor="n", padx=20, pady=20, expand=True)
 
-botao_escolher_excel = ttk.Button(bloco_bd, text="Clique para escolher o Excel: ", command=selecionar_arquivo_excel)
-botao_escolher_excel.pack(pady=10)
+    botao_escolher_excel = ttk.Button(bloco_bd, text="Clique para escolher o Excel: ", command=selecionar_arquivo_excel)
+    botao_escolher_excel.pack(pady=10)
 
-lista_box = tk.Listbox(bloco_bd, width=30, height=1, font=("Arial", 10))
-lista_box.pack(pady=2.5)
+    lista_box = tk.Listbox(bloco_bd, width=30, height=1, font=("Arial", 10))
+    lista_box.pack(pady=2.5)
 
-mensagem_schema = ttk.Label(bloco_bd, text="Escolha a pasta e logo após a tabela para inserir os dados do Excel", bootstyle="secondary")
-mensagem_schema.pack(pady=10)
-todas_schema = insp.get_schema_names()
-schema_box = ttk.Combobox(bloco_bd, values=todas_schema, bootstyle="secondary", width=20, justify="center")
-schema_box.current(0)
-schema_box.pack(pady=10)
+    mensagem_schema = ttk.Label(bloco_bd, text="Escolha a pasta e logo após a tabela para inserir os dados do Excel", bootstyle="secondary")
+    mensagem_schema.pack(pady=10)
+    todas_schema = insp.get_schema_names()
+    schema_box = ttk.Combobox(bloco_bd, values=todas_schema, bootstyle="secondary", width=20, justify="center")
+    schema_box.current(0)
+    schema_box.pack(pady=10)
 
-todas_tabelas = insp.get_table_names(schema=schema_box.get())
-tabela_box = ttk.Combobox(bloco_bd, values=[], bootstyle="secondary", heigh=5, width=20, justify="center") 
+    todas_tabelas = insp.get_table_names(schema=schema_box.get())
+    tabela_box = ttk.Combobox(bloco_bd, values=todas_tabelas, bootstyle="secondary", height=5, width=20, justify="center")
 
-tabela_box.pack(pady=10)
+    tabela_box.pack(pady=10)
 
-schema_box.bind("<<ComboboxSelected>>", lambda e: atualizar_box_tabelas())
+    schema_box.bind("<<ComboboxSelected>>", lambda e: atualizar_box_tabelas())
 
-########################
-#AREA DE MENSAGENS
-bloco_mensagem = ttk.LabelFrame(root, text="Mensagens", bootstyle="info")
-bloco_mensagem.pack(anchor="center", padx=20, pady=20)
+    ########################
+    #AREA DE MENSAGENS
+    bloco_mensagem = ttk.Labelframe(root, text="Mensagens", bootstyle="info")
+    bloco_mensagem.pack(anchor="center", padx=20, pady=20)
 
-mensagem = ttk.Label(bloco_mensagem, text="", wraplength=400, anchor="w", justify="left")
-mensagem.pack(padx=20, pady=20)
+    mensagem = ttk.Label(bloco_mensagem, text="", wraplength=400, anchor="w", justify="left")
+    mensagem.pack(padx=20, pady=20)
 
-mensagem_quantidade = ttk.Label(bloco_mensagem, text="Quantidade de registros: ", bootstyle="secondary")
-mensagem_quantidade.pack(pady=5)
+    mensagem_quantidade = ttk.Label(bloco_mensagem, text="Quantidade de registros: ", bootstyle="secondary")
+    mensagem_quantidade.pack(pady=5)
 
-#BOTAO PARA ABRIR O EXCEL
-botao_abrir_excel = ttk.Button(bloco_bd, text="Abrir Excel", command=threading_processar_excel, bootstyle="primary")
-botao_abrir_excel.pack(pady=10)
+    #BOTAO PARA ABRIR O EXCEL
+    botao_abrir_excel = ttk.Button(bloco_bd, text="Abrir Excel", command=threading_processar_excel, bootstyle="primary")
+    botao_abrir_excel.pack(pady=10)
 
-#BARRA DE PROGRESSO
-label_porcentagem = ttk.Label(bloco_bd, text="0%", bootstyle="dark")
-label_porcentagem.pack(pady=5)
+    #BARRA DE PROGRESSO
+    label_porcentagem = ttk.Label(bloco_bd, text="0%", bootstyle="dark")
+    label_porcentagem.pack(pady=5)
 
-progress = ttk.Progressbar(bloco_bd, orient="horizontal", length=200, mode="determinate", bootstyle="success")
-progress.pack(pady=10)
+    progress = ttk.Progressbar(bloco_bd, orient="horizontal", length=200, mode="determinate", bootstyle="success")
+    progress.pack(pady=10)
+
 
 root.mainloop()
