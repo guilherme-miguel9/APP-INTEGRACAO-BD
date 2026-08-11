@@ -66,6 +66,7 @@ Para compilar a aplicação **Lumi** em um executável autônomo com ícone e o 
    python3 -m PyInstaller -y --noconsole --onefile \
      --icon="Banco de Dados/icones/icone_aplicativo.ico" \
      --name="Lumi" \
+     --collect-all python_calamine \
      --add-data="config.ini:." \
      --add-data="Banco de Dados/icones:Banco de Dados/icones" \
      "Banco de Dados/SCRIPTS/ORM_BD_CONEXAO_OSB.py"

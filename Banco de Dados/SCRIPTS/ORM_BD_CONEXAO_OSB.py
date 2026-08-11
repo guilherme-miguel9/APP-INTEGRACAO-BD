@@ -740,6 +740,8 @@ def processar_excel(tabela_leitura, schema_leitura):
             ignore_index=True
         )
 
+
+
         ponteiro_01 = True
 
         df = df.fillna('')
