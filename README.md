@@ -1,43 +1,77 @@
-# App Integração Banco de Dados
+# Lumi - App Integração Banco de Dados
 
-Aplicativo desktop desenvolvido em Python para automatizar a leitura, tratamento e inserção de dados de planilhas Excel em um banco de dados PostgreSQL.
+Aplicativo desktop desenvolvido em Python com **PySide6** para automatizar a leitura, tratamento e inserção de dados de planilhas Excel em um banco de dados PostgreSQL.
 
 ## Visão Geral
 
-Este projeto oferece uma interface gráfica (GUI) intuitiva que permite ao usuário conectar-se a um banco de dados PostgreSQL, selecionar arquivos Excel (`.xlsx` ou `.xls`) e importar os dados em massa para o banco. O sistema realiza limpeza, formatação de dados e utiliza a função `COPY` nativa do PostgreSQL para garantir inserções com alta performance.
+O **Lumi** oferece uma interface gráfica (GUI) moderna, minimalista e intuitiva que permite ao usuário conectar-se a um banco de dados PostgreSQL, selecionar arquivos Excel (`.xlsx` ou `.xls`) e importar os dados em massa. O sistema realiza limpeza, formatação de dados e utiliza o comando nativo `COPY` do PostgreSQL via `psycopg2` para garantir inserções de altíssima performance.
 
 ## Funcionalidades
 
-*   **Autenticação Segura:** Tela de login para credenciais do banco de dados, protegendo o acesso.
-*   **Interface Gráfica Amigável:** Construída com `tkinter` e `ttkbootstrap`, guiando o usuário no processo de importação.
-*   **Tratamento de Dados:** Mapeamento automático de colunas, conversão de formatos (datas, horas e números) e tratamento de valores nulos utilizando a biblioteca `pandas`.
-*   **Controle de Duplicidade:** O script apaga os registros referentes aos mesmos dias contidos na planilha na tabela de destino antes de realizar a inserção, evitando duplicações.
-*   **Alta Performance:** Inserção otimizada de grandes volumes de dados convertendo DataFrames para um buffer CSV em memória, utilizando o comando `COPY` via `psycopg2`.
-*   **Feedback em Tempo Real:** Barra de progresso e informações de quantidade de registros processados e inseridos.
-*   **Processamento Assíncrono:** Uso de `threading` para manter a interface responsiva durante a importação e tratamento de dados.
+*   **Autenticação Segura:** Tela de login para credenciais do banco de dados (usuário e senha informados em tempo de execução).
+*   **Interface Gráfica Moderna (PySide6):** Design minimalista escuro (*Dark Mode*), com cantos arredondados e sem poluição visual.
+*   **Tratamento Automático de Dados:** Mapeamento de colunas, conversão de formatos (datas, horas e números) e tratamento de valores nulos utilizando `pandas` e `calamine`.
+*   **Controle de Duplicidade:** O script apaga os registros referentes aos mesmos dias contidos na planilha na tabela de destino antes de realizar a nova inserção, evitando registros duplicados.
+*   **Alta Performance:** Inserção otimizada de grandes volumes de dados via buffer CSV em memória com `COPY` do `psycopg2`.
+*   **Feedback em Tempo Real:** Barra de progresso e contadores de registros atualizados em thread separada (Thread-Safe via `PySide6.QtCore.Signal`).
 
 ## Tecnologias Utilizadas
 
 *   **Linguagem:** Python 3
+*   **Interface Gráfica (GUI):** PySide6 (Qt 6)
 *   **Banco de Dados:** PostgreSQL
-*   **Interface Gráfica (GUI):** Tkinter, ttkbootstrap
-*   **Manipulação de Dados:** Pandas, openpyxl
+*   **Manipulação de Dados:** Pandas, python-calamine, openpyxl
 *   **Conexão DB:** psycopg2, SQLAlchemy
+*   **Empacotamento:** PyInstaller
 
-## Estrutura do Projeto
+## Configuração Obrigatória (`config.ini`)
 
-*   `Banco de Dados/SCRIPTS/`: Contém os scripts principais da aplicação (ex: `ORM_BD_CONEXAO_OSB.py` e `ORM_BD_CONEXAO_OSP.py`), que possuem a lógica da interface e integração.
-*   `config.ini`: Arquivo de configuração onde são definidos os parâmetros do banco de dados, como `host` e nome do banco (`dbname`). O acesso sensível, como senha, é realizado na própria interface do sistema.
-*   Arquivos `.sql`: Scripts complementares utilizados para consultas ou modelagem dos dados (`LEITURA TABELA.sql` e `LEITURA_SQL.sql`).
+> [!IMPORTANT]
+> O arquivo `config.ini` **não é enviado ao repositório Git** por questões de segurança (está no `.gitignore`). É **obrigatório** criá-lo na raiz do projeto antes de executar o script ou gerar o executável.
 
-## Como Utilizar
+Crie um arquivo chamado `config.ini` na raiz do projeto (`/APP-INTEGRACAO-BD/config.ini`) com a seguinte estrutura, alterando as variáveis `host` e `dbname` para os valores correspondentes ao seu ambiente de desenvolvimento/produção:
 
-1.  Configure o arquivo `config.ini` com as informações do seu `host` e `dbname`. (O usuário e senha devem ser inseridos na interface no momento do uso).
-2.  Execute um dos scripts principais localizados na pasta `Banco de Dados/SCRIPTS`.
-3.  Preencha o formulário de login com suas credenciais do banco de dados.
-4.  Após o login, selecione o arquivo Excel desejado clicando no botão para carregar.
-5.  Defina o Schema e a Tabela de destino nas opções da tela.
-6.  Clique no botão correspondente para iniciar o processamento e acompanhe a barra de progresso até a conclusão.
+```ini
+[database]
+host = seu_host_aqui
+dbname = seu_banco_aqui
+```
+
+*Obs: O usuário e a senha do banco de dados não ficam no `config.ini`; eles são informados com segurança diretamente na tela de login da aplicação.*
+
+## Como Executar
+
+1. Crie e configure o arquivo `config.ini` na raiz do projeto conforme explicado acima.
+2. Instale as dependências necessárias:
+   ```bash
+   pip install pandas psycopg2-binary sqlalchemy PySide6 python-calamine openpyxl
+   ```
+3. Execute a aplicação:
+   ```bash
+   python3 "Banco de Dados/SCRIPTS/ORM_BD_CONEXAO_OSB.py"
+   ```
+
+## Como Gerar o Executável (PyInstaller)
+
+Para compilar a aplicação **Lumi** em um executável autônomo com ícone e o `config.ini` embutido:
+
+1. Certifique-se de que o PyInstaller está instalado:
+   ```bash
+   pip install pyinstaller
+   ```
+2. Certifique-se de que o arquivo `config.ini` foi criado e configurado com o `host` e `dbname` corretos do seu ambiente.
+3. Execute o comando de compilação na raiz do projeto:
+
+   ```bash
+   python3 -m PyInstaller -y --noconsole --onefile \
+     --icon="Banco de Dados/icones/icone_aplicativo.ico" \
+     --name="Lumi" \
+     --add-data="config.ini:." \
+     --add-data="Banco de Dados/icones:Banco de Dados/icones" \
+     "Banco de Dados/SCRIPTS/ORM_BD_CONEXAO_OSB.py"
+   ```
+
+4. O executável será gerado na pasta `dist/` com o nome **Lumi** (ou **Lumi.app** no macOS).
 
 ## Autor
 
