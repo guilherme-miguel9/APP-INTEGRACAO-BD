@@ -1,0 +1,7 @@
+pandas
+psycopg2-binary
+sqlalchemy
+PySide6
+python-calamine
+openpyxl
+pyinstaller

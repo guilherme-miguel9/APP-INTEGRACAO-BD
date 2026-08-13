@@ -98,9 +98,9 @@ mapeamento_colunas = {
 ## Como Executar
 
 1. Crie e configure o arquivo `config.ini` conforme explicado acima.
-2. Instale as dependências necessárias:
+2. Instale as dependências necessárias através do arquivo `requirements.txt`:
    ```bash
-   pip install pandas psycopg2-binary sqlalchemy PySide6 python-calamine openpyxl
+   pip install -r requirements.txt
    ```
 3. Execute o aplicativo OSB (Lumi):
    ```bash
