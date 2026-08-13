@@ -203,7 +203,7 @@ def processar_pasta_excel(caminho_pasta, tabela_leitura, schema_leitura):
 
         if tabela_leitura in dicionario_meses:
             mes_tabela_box = dicionario_meses[tabela_leitura]
-            mes_excel = pd.to_datetime(df['Data_Atual'].iloc[0]).month
+            mes_excel = pd.to_datetime(df['data_atual'].iloc[0]).month
 
             if mes_excel != mes_tabela_box:
                 raise SystemExit(f"O mês da tabela selecionada ({tabela_leitura}) não corresponde ao mês das planilhas lidas ({mes_excel}). Por favor, selecione a tabela correta.")
