@@ -167,6 +167,13 @@ def processar_pasta_excel(caminho_pasta, tabela_leitura, schema_leitura):
 
         df = pd.concat(dfs, ignore_index=True)
         df = df.fillna('')
+
+        # Remover colunas da planilha que não existem na tabela do banco de dados
+        colunas_para_remover = ['resultados diferidos', 'Versão do objeto', 'TROCAS', 'CONCAT', 'ATIVOS']
+        cols_existentes = [c for c in colunas_para_remover if c in df.columns]
+        if cols_existentes:
+            df.drop(columns=cols_existentes, inplace=True)
+
         df.rename(columns=mapeamento_colunas, inplace=True)
 
         df['Hora_Leitura'] = pd.to_datetime(df['Hora_Leitura'], format='%H:%M:%S', errors='coerce').dt.time

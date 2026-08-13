@@ -135,9 +135,10 @@ def inserir_dataframe_no_banco(df, dias, tabela_leitura, schema_leitura, start_t
 
                 signals.update_message.emit("Transmitindo dados para o PostgreSQL via COPY...", "blue")
 
+                colunas_sql = ', '.join([f'"{col}"' for col in df.columns])
                 query_copy = f"""
                 COPY {schema_leitura}.{tabela_leitura}
-                ({', '.join(df.columns)})
+                ({colunas_sql})
                 FROM STDIN WITH (FORMAT CSV, NULL '', ENCODING 'UTF8')
                 """
 
