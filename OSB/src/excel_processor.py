@@ -23,53 +23,53 @@ colunasarrumadas = {
 }
 
 mapeamento_colunas = {
-    'Nome da Origem.1': 'Data_Atual',
-    'Nº': 'N',
-    'Nº item da ordem': 'Numero_Item_Ordem',
-    'Instal': 'Instalacao',
-    'Registrador': 'Registrador',
-    'Rua': 'Rua',
-    'Nº da casa': 'N_casa',
-    'Sequência': 'Sequencia',
-    'Contrato': 'Contrato',
-    'Latitude localiz.geográfica': 'Latitude',
-    'Longitude localiz.geográfica': 'Longitude',
-    'Val Fat': 'Valor_fatura',
-    'NomeCliente': 'Nome_Cliente',
-    'Complemento': 'Complemento',
-    'Ponto Ref': 'Ponto_Ref',
-    'Local': 'Municipio',
-    'Bairro': 'Bairro',
-    'Sigla edifício': 'Sigla_Edificio',
-    'Nº sala': 'N_sala',
-    'Andar': 'Andar',
-    'Complemento endereco': 'Complemento_Endereco',
-    'ObjLigacao': 'Objeto_Ligacao',
-    'Nº Poste': 'N_poste',
-    'Nº Serie': 'N_serie',
-    'Unid.leit': 'Unidade_Leitura',
-    'O. leitura real': 'O_Leitura_Real',
-    'O. Sem leit real': 'O_Sem_Leitura_Real',
-    'Nota leit.': 'Nota_Leitura',
-    'Hora leit.': 'Hora_Leitura',
-    'Seq.Mod': 'SeqMod',
-    'Cond WOL': 'CondWOL',
-    'Leit': 'Codigo_Leitor',
-    'Nome leit': 'Nome_Leit',
-    'Indic Foto': 'Indicador_Foto',
-    'Interv.Leit': 'Intervalo_leitura',
-    'Cta.contr.': 'Conta_Contrato',
-    'Abaixo lim': 'Abaixo_Lim',
-    'Excede lim': 'Excede_Lim',
-    'Desvio leit': 'Desvio_Leitura',
-    'Fat. Assin': 'Fat_Assin',
-    'Coment.leitura': 'Comentario_Leitura',
-    'Coment.fatura': 'Comentario_Fatura',
-    'Tipo rota': 'Tipo_Rota',
-    'Tipo ordem': 'Tipo_Ordem',
-    'Impresso': 'Impresso',
-    'ResCampo': 'Res_campo',
-    'FA CT OK': 'FACT_OK'
+    'Nome da Origem.1': 'data_atual',
+    'Nº': 'n',
+    'Nº item da ordem': 'numero_item_ordem',
+    'Instal': 'instalacao',
+    'Registrador': 'registrador',
+    'Rua': 'rua',
+    'Nº da casa': 'n_casa',
+    'Sequência': 'sequencia',
+    'Contrato': 'contrato',
+    'Latitude localiz.geográfica': 'latitude',
+    'Longitude localiz.geográfica': 'longitude',
+    'Val Fat': 'valor_fatura',
+    'NomeCliente': 'nome_cliente',
+    'Complemento': 'complemento',
+    'Ponto Ref': 'ponto_ref',
+    'Local': 'municipio',
+    'Bairro': 'bairro',
+    'Sigla edifício': 'sigla_edificio',
+    'Nº sala': 'n_sala',
+    'Andar': 'andar',
+    'Complemento endereco': 'complemento_endereco',
+    'ObjLigacao': 'objeto_ligacao',
+    'Nº Poste': 'n_poste',
+    'Nº Serie': 'n_serie',
+    'Unid.leit': 'unidade_leitura',
+    'O. leitura real': 'o_leitura_real',
+    'O. Sem leit real': 'o_sem_leitura_real',
+    'Nota leit.': 'nota_leitura',
+    'Hora leit.': 'hora_leitura',
+    'Seq.Mod': 'seqmod',
+    'Cond WOL': 'condwol',
+    'Leit': 'codigo_leitor',
+    'Nome leit': 'nome_leit',
+    'Indic Foto': 'indicador_foto',
+    'Interv.Leit': 'intervalo_leitura',
+    'Cta.contr.': 'conta_contrato',
+    'Abaixo lim': 'abaixo_lim',
+    'Excede lim': 'excede_lim',
+    'Desvio leit': 'desvio_leitura',
+    'Fat. Assin': 'fat_assin',
+    'Coment.leitura': 'comentario_leitura',
+    'Coment.fatura': 'comentario_fatura',
+    'Tipo rota': 'tipo_rota',
+    'Tipo ordem': 'tipo_ordem',
+    'Impresso': 'impresso',
+    'ResCampo': 'res_campo',
+    'FA CT OK': 'fact_ok'
 }
 
 def listar_arquivos_excel(caminho_pasta: str):
@@ -176,27 +176,30 @@ def processar_pasta_excel(caminho_pasta, tabela_leitura, schema_leitura):
 
         df.rename(columns=mapeamento_colunas, inplace=True)
 
-        df['Hora_Leitura'] = pd.to_datetime(df['Hora_Leitura'], format='%H:%M:%S', errors='coerce').dt.time
-        df['Intervalo_leitura'] = pd.to_datetime(df['Intervalo_leitura'], format='%H:%M:%S', errors='coerce').dt.time
-        df['Data_Atual'] = pd.to_datetime(df['Data_Atual'], format='%d.%m.%Y', errors='coerce')
+        df['hora_leitura'] = pd.to_datetime(df['hora_leitura'], format='%H:%M:%S', errors='coerce').dt.time
+        df['intervalo_leitura'] = pd.to_datetime(df['intervalo_leitura'], format='%H:%M:%S', errors='coerce').dt.time
+        df['data_atual'] = pd.to_datetime(df['data_atual'], format='%d.%m.%Y', errors='coerce')
 
-        df['Latitude'] = pd.to_numeric(
-            df['Latitude'].astype(str).str.replace(',', '.', regex=False),
+        df['latitude'] = pd.to_numeric(
+            df['latitude'].astype(str).str.replace(',', '.', regex=False),
             errors='coerce'
         )
 
-        df['Longitude'] = pd.to_numeric(
-            df['Longitude'].astype(str).str.replace(',', '.', regex=False),
+        df['longitude'] = pd.to_numeric(
+            df['longitude'].astype(str).str.replace(',', '.', regex=False),
             errors='coerce'
         )
 
-        df['Valor_fatura'] = pd.to_numeric(
-            df['Valor_fatura'].astype(str).str.replace(',', '.', regex=False),
+        df['valor_fatura'] = pd.to_numeric(
+            df['valor_fatura'].astype(str).str.replace(',', '.', regex=False),
             errors='coerce'
         )
 
-        dias = df['Data_Atual'].dt.day.dropna().unique().tolist()
-        df['Data_Atual'] = pd.to_datetime(df['Data_Atual'], errors='coerce').dt.strftime('%Y-%m-%d')
+        dias = df['data_atual'].dt.day.dropna().unique().tolist()
+        df['data_atual'] = pd.to_datetime(df['data_atual'], errors='coerce').dt.strftime('%Y-%m-%d')
+
+        # Garantir que 100% dos nomes das colunas estejam em minúsculo para o PostgreSQL
+        df.columns = [str(c).lower() for c in df.columns]
 
         if tabela_leitura in dicionario_meses:
             mes_tabela_box = dicionario_meses[tabela_leitura]
