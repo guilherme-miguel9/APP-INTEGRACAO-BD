@@ -1,0 +1,6 @@
+[database]
+# Informe o host do seu servidor PostgreSQL (ex: localhost, 127.0.0.1 ou IP/URL do servidor)
+host = localhost
+
+# Informe o nome do banco de dados PostgreSQL
+dbname = seu_banco_aqui

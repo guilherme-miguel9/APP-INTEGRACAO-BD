@@ -2,6 +2,8 @@
 
 Aplicativo desktop desenvolvido em Python com **PySide6** para automatizar a leitura, tratamento e inserção de dados de planilhas Excel em um banco de dados PostgreSQL.
 
+---
+
 ## Visão Geral
 
 O repositório é composto por dois módulos de integração:
@@ -14,51 +16,93 @@ O repositório é composto por dois módulos de integração:
 
 ```
 APP-INTEGRACAO-BD/
-├── config.ini                       # Configuração global de banco de dados
+├── config.ini.example               # Exemplo de configuração de banco de dados para o GitHub
 ├── Lumi.spec                        # Especificação de compilação PyInstaller
 ├── README.md                        # Documentação do projeto
 ├── OSB/                             # Projeto OSB (Lumi) modular
 │   ├── main.py                      # Ponto de entrada do aplicativo OSB
 │   ├── assets/                      # Recursos visuais (ícones)
 │   └── src/                         # Módulos Python (gui, excel, database, etc.)
+│       ├── config.py                # Resolução de caminhos e config.ini
+│       ├── database.py              # Autenticação e streaming COPY para o PostgreSQL
+│       ├── excel_processor.py       # Leitura com calamine, mapeamento e colunas fixas
+│       ├── signals.py               # Sinais PySide6 para UI e progresso
+│       ├── styles.py                # Tema Dark e estilos QSS
+│       └── gui/                     # Componentes da interface PySide6
 └── OSP/                             # Projeto OSP isolado
     └── ORM_BD_CONEXAO_OSP.py
 ```
 
 ---
 
-## Funcionalidades Principais (OSB)
-
-*   **Seleção por Pasta de Planilhas:** Seleção de diretório completo com varredura automática de arquivos `.xlsx`, `.xlsm` e `.xls`.
-*   **Identificação de Origem (`Nome da Origem.1`):** Extração automática dos 10 primeiros caracteres do nome de cada arquivo lido e gravação direta na coluna de origem antes da consolidação no DataFrame.
-*   **Autenticação Segura:** Tela de login para credenciais do banco de dados (usuário e senha informados em tempo de execução).
-*   **Interface Gráfica Moderna (PySide6):** Design minimalista escuro (*Dark Mode*), com cantos arredondados e feedback visual em tempo real.
-*   **Alta Performance (`calamine` + `COPY`):** Leitura de planilhas otimizada em Rust com `python-calamine` e inserção em massa via buffer CSV em memória com `COPY` do `psycopg2`.
-*   **Controle de Duplicidade:** O script apaga os registros referentes aos mesmos dias contidos nas planilhas na tabela de destino antes de realizar a nova inserção.
-
----
-
 ## Configuração Obrigatória (`config.ini`)
 
 > [!IMPORTANT]
-> O arquivo `config.ini` **não é enviado ao repositório Git** por questões de segurança (está no `.gitignore`). É **obrigatório** criá-lo na raiz do projeto (`/APP-INTEGRACAO-BD/config.ini`):
+> O arquivo `config.ini` **não é enviado ao repositório Git** por questões de segurança (está no `.gitignore`). É **obrigatório** criá-lo na raiz do projeto antes de executar a aplicação.
 
-```ini
-[database]
-host = seu_host_aqui
-dbname = seu_banco_aqui
+### Como criar o arquivo de configuração:
+
+1. Na raiz do projeto, faça uma cópia do arquivo de exemplo:
+   ```bash
+   cp config.ini.example config.ini
+   ```
+
+2. Abra o arquivo `config.ini` e configure o servidor e o banco de dados desejados:
+   ```ini
+   [database]
+   host = seu_servidor_postgresql
+   dbname = seu_banco_de_dados
+   ```
+
+> [!NOTE]
+> **Autenticação e Credenciais:** O usuário (`user`) e a senha (`password`) do banco de dados **não ficam gravados em arquivos de configuração**. Eles são informados com total segurança diretamente na tela de login da interface gráfica (PySide6) ao iniciar a aplicação.
+
+---
+
+## Como Personalizar as Colunas do Excel e do Banco de Dados
+
+Para alterar ou adaptar as colunas do Excel para a sua necessidade ou schema de banco de dados diferente, edite o arquivo **[`OSB/src/excel_processor.py`](file:///Users/guilhermemiguel/Documents/APP-INTEGRACAO-BD/OSB/src/excel_processor.py)**.
+
+Nele existem dois dicionários principais:
+
+### 1. `colunasarrumadas` (Tipagem de Leitura do Excel)
+Define os tipos de dados forçados na leitura inicial das planilhas para evitar perda de zeros à esquerda ou erros de conversão.
+
+```python
+colunasarrumadas = {
+    'Nº': str,
+    'Instal': str,
+    'Contrato': str,
+    'Cta.contr.': str
+    # Adicione ou remova colunas do seu Excel aqui
+}
+```
+
+### 2. `mapeamento_colunas` (Excel -> PostgreSQL)
+Mapeia o nome exato da coluna no Excel (à esquerda) para o nome da coluna correspondente na tabela do banco de dados PostgreSQL (à direita):
+
+```python
+mapeamento_colunas = {
+    'Nome da Origem.1': 'Data_Atual',     # Origem gerada automaticamente dos 10 1ºs dígitos do nome do arquivo
+    'Nº': 'N',
+    'Nº item da ordem': 'Numero_Item_Ordem',
+    'Instal': 'Instalacao',
+    'NomeCliente': 'Nome_Cliente',
+    'Val Fat': 'Valor_fatura'
+    # Adicione novos mapeamentos no formato: 'Nome No Excel': 'nome_no_postgres'
+}
 ```
 
 ---
 
 ## Como Executar
 
-1. Crie e configure o arquivo `config.ini` na raiz do projeto.
+1. Crie e configure o arquivo `config.ini` conforme explicado acima.
 2. Instale as dependências necessárias:
    ```bash
    pip install pandas psycopg2-binary sqlalchemy PySide6 python-calamine openpyxl
    ```
-3. Execute o aplicativo OSB:
+3. Execute o aplicativo OSB (Lumi):
    ```bash
    python3 OSB/main.py
    ```
@@ -70,7 +114,7 @@ dbname = seu_banco_aqui
 Para compilar a aplicação **Lumi (OSB)** em um executável autônomo:
 
 ```bash
-python3 -m PyInstaller Lumi.spec
+python3 -m PyInstaller -y Lumi.spec
 ```
 
 O executável será gerado na pasta `dist/` com o nome **Lumi** (ou **Lumi.app** no macOS).
