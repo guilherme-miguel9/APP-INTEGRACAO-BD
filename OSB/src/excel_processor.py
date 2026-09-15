@@ -195,7 +195,7 @@ def processar_pasta_excel(caminho_pasta, tabela_leitura, schema_leitura):
             errors='coerce'
         )
 
-        dias = df['data_atual'].dt.day.dropna().unique().tolist()
+        datas = df['data_atual'].dt.strftime('%Y-%m-%d').dropna().unique().tolist()
         df['data_atual'] = pd.to_datetime(df['data_atual'], errors='coerce').dt.strftime('%Y-%m-%d')
 
         # Garantir que 100% dos nomes das colunas estejam em minúsculo para o PostgreSQL
@@ -222,4 +222,4 @@ def processar_pasta_excel(caminho_pasta, tabela_leitura, schema_leitura):
         return
 
     # Inserção no banco com monitoramento em tempo real do stream COPY
-    inserir_dataframe_no_banco(df, dias, tabela_leitura, schema_leitura, start_time_global)
+    inserir_dataframe_no_banco(df, datas, tabela_leitura, schema_leitura, start_time_global)

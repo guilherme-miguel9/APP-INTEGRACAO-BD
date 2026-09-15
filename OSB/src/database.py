@@ -74,7 +74,7 @@ def fetch_tables(schema_name):
     except Exception:
         signals.tables_loaded.emit([])
 
-def inserir_dataframe_no_banco(df, dias, tabela_leitura, schema_leitura, start_time_global):
+def inserir_dataframe_no_banco(df, datas, tabela_leitura, schema_leitura, start_time_global):
     cursor = None
     conn = None
     try:
@@ -92,17 +92,17 @@ def inserir_dataframe_no_banco(df, dias, tabela_leitura, schema_leitura, start_t
             with conn.cursor() as cursor:
                 cursor.execute("SET datestyle TO 'ISO, DMY';")
 
-                if dias:
-                    signals.update_message.emit("Removendo registros existentes para os dias das planilhas...", "blue")
-                    query_dias = sql.SQL(
-                        "DELETE FROM {schema_leitura}.{tabela_leitura} WHERE EXTRACT(DAY FROM data_atual) IN ({placeholders})"
+                if datas:
+                    signals.update_message.emit("Removendo registros existentes para as datas das planilhas...", "blue")
+                    query_datas = sql.SQL(
+                        "DELETE FROM {schema_leitura}.{tabela_leitura} WHERE data_atual::date IN ({placeholders})"
                     ).format(
                         tabela_leitura=sql.Identifier(tabela_leitura),
                         schema_leitura=sql.Identifier(schema_leitura),
-                        placeholders=sql.SQL(',').join(sql.Placeholder() * len(dias))
+                        placeholders=sql.SQL(',').join(sql.Placeholder() * len(datas))
                     )
 
-                    cursor.execute(query_dias, dias)
+                    cursor.execute(query_datas, datas)
                     conn.commit()
 
                 signals.update_message.emit("Gerando buffer de dados para envio...", "blue")
