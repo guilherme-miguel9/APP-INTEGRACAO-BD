@@ -29,9 +29,28 @@ APP-INTEGRACAO-BD/
 │       ├── signals.py               # Sinais PySide6 para UI e progresso
 │       ├── styles.py                # Tema Dark e estilos QSS
 │       └── gui/                     # Componentes da interface PySide6
-└── OSP/                             # Projeto OSP isolado
-    └── ORM_BD_CONEXAO_OSP.py
+└── OSP/                             # Projeto OSP modular
+    ├── main.py                      # Ponto de entrada do aplicativo OSP
+    ├── assets/                      # Recursos visuais (ícones)
+    └── src/                         # Módulos Python (gui, excel, database, etc.)
+        ├── config.py                # Resolução de caminhos e config.ini
+        ├── database.py              # Autenticação e streaming COPY para o PostgreSQL
+        ├── excel_processor.py       # Processamento específico OSP (aba OSP, mapeamentos)
+        ├── signals.py               # Sinais PySide6 para UI e progresso
+        ├── styles.py                # Tema Dark e estilos QSS
+        └── gui/                     # Componentes da interface PySide6
 ```
+
+---
+
+## Funcionalidades Principais
+
+*   **Seleção por Pasta de Planilhas:** Seleção de diretório completo com varredura automática de arquivos `.xlsx`, `.xlsm` e `.xls`.
+*   **Identificação de Origem (`Nome da Origem.1`):** Extração automática dos 10 primeiros caracteres do nome de cada arquivo lido e gravação direta na coluna de origem antes da consolidação no DataFrame.
+*   **Autenticação Segura:** Tela de login para credenciais do banco de dados (usuário e senha informados em tempo de execução).
+*   **Interface Gráfica Moderna (PySide6):** Design minimalista escuro (*Dark Mode*), com cantos arredondados e feedback visual em tempo real.
+*   **Alta Performance (`calamine` + `COPY`):** Leitura de planilhas otimizada em Rust com `python-calamine` e inserção em massa via buffer CSV em memória com `COPY` do `psycopg2`.
+*   **Controle de Duplicidade por Data Completa:** O script apaga os registros referentes às mesmas datas (dia-mês-ano) contidas nas planilhas na tabela de destino antes de realizar a nova inserção, suportando tabelas anuais com segurança.
 
 ---
 
@@ -98,9 +117,9 @@ mapeamento_colunas = {
 ## Como Executar
 
 1. Crie e configure o arquivo `config.ini` conforme explicado acima.
-2. Instale as dependências necessárias através do arquivo `requirements.txt`:
+2. Instale as dependências necessárias:
    ```bash
-   pip install -r requirements.txt
+   pip install pandas psycopg2-binary sqlalchemy PySide6 python-calamine openpyxl
    ```
 3. Execute o aplicativo OSB (Lumi):
    ```bash
