@@ -117,11 +117,16 @@ mapeamento_colunas = {
 ## Como Executar
 
 1. Crie e configure o arquivo `config.ini` conforme explicado acima.
-2. Instale as dependências necessárias:
+2. (Recomendado) Crie e ative um ambiente virtual:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # No Windows: venv\Scripts\activate
+   ```
+3. Instale as dependências necessárias:
    ```bash
    pip install -r requirements.txt
    ```
-3. Execute o aplicativo desejado:
+4. Execute o aplicativo desejado:
    * **OSB (Lumi):**
      ```bash
      python3 OSB/main.py
